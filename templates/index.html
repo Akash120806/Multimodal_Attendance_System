@@ -1,0 +1,1309 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Multimodal Attendance & Engagement Agent</title>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --background: #080d18;
+            --sidebar: #0d1525;
+            --panel: #111d30;
+            --panel-light: #17253b;
+            --border: #26364f;
+            --text: #edf3ff;
+            --muted: #8fa2bc;
+            --green: #20e3b2;
+            --blue: #5596ff;
+            --purple: #a78bfa;
+            --red: #ff6b81;
+        }
+
+        body {
+            background: var(--background);
+            color: var(--text);
+            font-family: "Segoe UI", Arial, sans-serif;
+            min-height: 100vh;
+        }
+
+        button,
+        input {
+            font: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        .dashboard {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* SIDEBAR */
+
+        .sidebar {
+            width: 245px;
+            background: var(--sidebar);
+            border-right: 1px solid var(--border);
+            padding: 26px 18px;
+            flex-shrink: 0;
+        }
+
+        .brand {
+            font-size: 19px;
+            font-weight: 700;
+            line-height: 1.4;
+            margin-bottom: 38px;
+        }
+
+        .brand span {
+            color: var(--green);
+        }
+
+        .sidebar-label {
+            color: var(--muted);
+            font-size: 11px;
+            letter-spacing: 1.5px;
+            margin: 25px 10px 12px;
+        }
+
+        .nav-link {
+            display: block;
+            text-decoration: none;
+            color: var(--muted);
+            padding: 12px;
+            border-radius: 9px;
+            margin-bottom: 6px;
+            transition: 0.2s;
+            font-size: 14px;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: var(--panel-light);
+            color: var(--green);
+        }
+
+        .sidebar-footer {
+            margin-top: 45px;
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+        /* MAIN */
+
+        .main {
+            flex: 1;
+            min-width: 0;
+            padding: 28px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 28px;
+        }
+
+        .topbar h1 {
+            font-size: 25px;
+            margin-bottom: 7px;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .system-status {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 10px 15px;
+            border-radius: 30px;
+            font-size: 12px;
+            color: var(--green);
+        }
+
+        .status-dot {
+            display: inline-block;
+            height: 8px;
+            width: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            margin-right: 7px;
+        }
+
+        /* SECTION */
+
+        .section {
+            margin-bottom: 25px;
+            scroll-margin-top: 20px;
+        }
+
+        .section-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .section-heading h2 {
+            font-size: 18px;
+        }
+
+        .section-heading p {
+            color: var(--muted);
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        /* CARDS */
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 13px;
+            padding: 20px;
+            min-width: 0;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 15px;
+        }
+
+        /* CAMERA */
+
+        .camera-container {
+            position: relative;
+            background: #03070e;
+            border-radius: 10px;
+            overflow: hidden;
+            min-height: 250px;
+            aspect-ratio: 16 / 9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #webcam {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            position: absolute;
+            inset: 0;
+        }
+
+        #cameraOverlay {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .camera-placeholder {
+            position: relative;
+            z-index: 2;
+            color: var(--muted);
+            text-align: center;
+            padding: 20px;
+            line-height: 1.8;
+        }
+
+        .camera-placeholder .camera-icon {
+            font-size: 40px;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .camera-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        .camera-info {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .camera-info-item {
+            background: var(--panel-light);
+            padding: 12px;
+            border-radius: 9px;
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .camera-info-item span {
+            display: block;
+            color: var(--muted);
+            font-size: 11px;
+            margin-bottom: 7px;
+        }
+
+        .camera-info-item strong {
+            font-size: 20px;
+        }
+
+        .camera-message {
+            margin-top: 13px;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.6;
+            min-height: 20px;
+        }
+
+        /* BUTTONS */
+
+        .btn {
+            border: none;
+            padding: 11px 17px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 12px;
+            transition: 0.2s;
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: var(--green);
+            color: #06241e;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #55f0c7;
+        }
+
+        .btn-blue {
+            background: var(--blue);
+            color: white;
+        }
+
+        .btn-danger {
+            background: #542333;
+            color: #ff9bad;
+            border: 1px solid #793449;
+        }
+
+        .btn-secondary {
+            background: var(--panel-light);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        /* UPLOAD */
+
+        .upload-area {
+            border: 1px dashed #405674;
+            background: #0c1626;
+            padding: 25px;
+            text-align: center;
+            border-radius: 10px;
+        }
+
+        .upload-area input {
+            display: block;
+            width: 100%;
+            margin: 15px 0;
+            color: var(--muted);
+        }
+
+        .upload-area label {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+            text-align: left;
+            margin-top: 10px;
+        }
+
+        .upload-area input[type="text"] {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 11px;
+            border-radius: 7px;
+            color: white;
+        }
+
+        /* METRICS */
+
+        .metric-label {
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 12px;
+        }
+
+        .metric-value {
+            font-size: 29px;
+            font-weight: 700;
+        }
+
+        .metric-description {
+            color: var(--muted);
+            font-size: 11px;
+            margin-top: 8px;
+        }
+
+        .progress-track {
+            height: 7px;
+            background: #26364f;
+            border-radius: 20px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--green);
+            border-radius: 20px;
+            transition: width 0.4s;
+        }
+
+        /* CHART */
+
+        .chart-container {
+            position: relative;
+            height: 260px;
+            width: 100%;
+        }
+
+        /* SUGGESTIONS */
+
+        .suggestion-list {
+            list-style: none;
+        }
+
+        .suggestion-list li {
+            border-left: 3px solid var(--green);
+            background: var(--panel-light);
+            padding: 13px;
+            margin-bottom: 10px;
+            border-radius: 0 8px 8px 0;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .student-summary {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        /* REPORT */
+
+        .report-stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+            margin: 20px 0;
+        }
+
+        .report-stat {
+            background: var(--panel-light);
+            padding: 16px;
+            border-radius: 9px;
+        }
+
+        .report-stat span {
+            display: block;
+            font-size: 11px;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        .report-stat strong {
+            font-size: 23px;
+        }
+
+        .report-list {
+            margin-top: 12px;
+        }
+
+        .report-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            padding: 12px;
+            background: var(--panel-light);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .report-note {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.7;
+            margin: 17px 0;
+        }
+
+        .report-heading {
+            margin-top: 24px;
+            font-size: 14px;
+        }
+
+        /* LOADER */
+
+        #loader {
+            display: none;
+            margin-top: 15px;
+            color: var(--green);
+            font-size: 12px;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        /* FOOTER */
+
+        .footer {
+            border-top: 1px solid var(--border);
+            margin-top: 35px;
+            padding-top: 20px;
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.7;
+        }
+
+        /* RESPONSIVE */
+
+        @media (max-width: 1000px) {
+
+            .sidebar {
+                width: 190px;
+            }
+
+            .main {
+                padding: 20px;
+            }
+
+            .grid-3 {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+        }
+
+        @media (max-width: 700px) {
+
+            .dashboard {
+                display: block;
+            }
+
+            .sidebar {
+                width: 100%;
+                padding: 15px;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .brand {
+                margin-bottom: 15px;
+            }
+
+            .sidebar-label,
+            .sidebar-footer {
+                display: none;
+            }
+
+            .sidebar nav {
+                display: flex;
+                gap: 5px;
+                overflow-x: auto;
+            }
+
+            .nav-link {
+                white-space: nowrap;
+                padding: 9px;
+                margin: 0;
+            }
+
+            .main {
+                padding: 16px;
+            }
+
+            .grid,
+            .grid-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .report-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .topbar h1 {
+                font-size: 21px;
+            }
+
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="dashboard">
+
+    <!-- ========================================= -->
+    <!-- SIDEBAR -->
+    <!-- ========================================= -->
+
+    <aside class="sidebar">
+
+        <div class="brand">
+            MULTIMODAL<br>
+            <span>SESSION AGENT</span>
+        </div>
+
+        <div class="sidebar-label">WORKSPACE</div>
+
+        <nav>
+
+            <a href="#overview" class="nav-link active">
+                Dashboard
+            </a>
+
+            <a href="#live-camera" class="nav-link">
+                Live Tracking
+            </a>
+
+            <a href="#recorded-analysis" class="nav-link">
+                Video Analysis
+            </a>
+
+            <a href="#analytics" class="nav-link">
+                Session Analytics
+            </a>
+
+            <a href="#insights" class="nav-link">
+                Teaching Insights
+            </a>
+
+            <a href="#student-summary" class="nav-link">
+                Student Summary
+            </a>
+
+            <a href="#liveReport" class="nav-link">
+                Live Reports
+            </a>
+
+        </nav>
+
+        <div class="sidebar-footer">
+            <strong>SESSION AGENT</strong><br>
+            Multimodal classroom monitoring prototype.<br><br>
+            Face detection and analytical estimates only.
+        </div>
+
+    </aside>
+
+
+    <!-- ========================================= -->
+    <!-- MAIN CONTENT -->
+    <!-- ========================================= -->
+
+    <main class="main">
+
+        <!-- TOPBAR -->
+
+        <header class="topbar" id="overview">
+
+            <div>
+                <h1>Classroom Dashboard</h1>
+
+                <p class="subtitle">
+                    Multimodal Attendance & Engagement Agent
+                </p>
+            </div>
+
+            <div class="system-status">
+                <span class="status-dot"></span>
+                SYSTEM READY
+            </div>
+
+        </header>
+
+
+        <!-- ===================================== -->
+        <!-- LIVE CAMERA -->
+        <!-- ===================================== -->
+
+        <section class="section" id="live-camera">
+
+            <div class="section-heading">
+
+                <div>
+                    <h2>Live Classroom Monitoring</h2>
+
+                    <p>
+                        Real-time camera-based face detection and temporary tracking
+                    </p>
+                </div>
+
+                <span class="system-status" id="cameraStatus">
+                    Camera not connected
+                </span>
+
+            </div>
+
+
+            <div class="card">
+
+                <div class="grid">
+
+                    <!-- CAMERA PREVIEW -->
+
+                    <div>
+
+                        <div class="camera-container">
+
+                            <video
+                                id="webcam"
+                                autoplay
+                                muted
+                                playsinline>
+                            </video>
+
+                            <canvas id="cameraOverlay"></canvas>
+
+                            <div
+                                class="camera-placeholder"
+                                id="cameraPlaceholder">
+
+                                <span class="camera-icon">📷</span>
+
+                                <strong>Camera Preview</strong>
+
+                                <p>
+                                    Enable your webcam to begin live monitoring.
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="camera-controls">
+
+                            <button
+                                class="btn btn-secondary"
+                                id="enableCameraBtn"
+                                type="button">
+
+                                Enable Camera
+
+                            </button>
+
+                            <button
+                                class="btn btn-primary"
+                                id="startLiveBtn"
+                                type="button"
+                                disabled>
+
+                                Start Live Tracking
+
+                            </button>
+
+                            <button
+                                class="btn btn-danger"
+                                id="stopLiveBtn"
+                                type="button"
+                                disabled>
+
+                                Stop Tracking
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- LIVE METRICS -->
+
+                    <div>
+
+                        <h3 style="font-size:15px;margin-bottom:15px;">
+                            Live Detection Statistics
+                        </h3>
+
+                        <div class="camera-info">
+
+                            <div class="camera-info-item">
+
+                                <span>Faces in current frame</span>
+
+                                <strong id="liveFaceCount">0</strong>
+
+                            </div>
+
+                            <div class="camera-info-item">
+
+                                <span>Unique temporary IDs</span>
+
+                                <strong id="liveParticipants">0</strong>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="camera-message">
+
+                            <p id="cameraMessage">
+                                Waiting for camera connection.
+                            </p>
+
+                        </div>
+
+
+                        <div style="
+                            margin-top:22px;
+                            background:var(--panel-light);
+                            padding:15px;
+                            border-radius:9px;
+                            line-height:1.8;
+                            font-size:12px;
+                            color:var(--muted);">
+
+                            <strong style="color:var(--text);">
+                                How live tracking works
+                            </strong>
+
+                            <p>
+                                The camera sends image frames to the Flask backend.
+                                OpenCV detects visible faces and assigns temporary
+                                participant IDs.
+                            </p>
+
+                            <p style="margin-top:8px;">
+                                IDs are not verified student identities and may
+                                change when a face disappears or moves.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ===================================== -->
+        <!-- RECORDED VIDEO UPLOAD -->
+        <!-- ===================================== -->
+
+        <section class="section" id="recorded-analysis">
+
+            <div class="section-heading">
+
+                <div>
+                    <h2>Recorded Classroom Analysis</h2>
+
+                    <p>
+                        Upload a previously recorded classroom video.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="card">
+
+                <form id="uploadForm">
+
+                    <div class="upload-area">
+
+                        <h3 style="font-size:15px;">
+                            Upload Classroom Video
+                        </h3>
+
+                        <p style="
+                            color:var(--muted);
+                            font-size:12px;
+                            margin-top:7px;">
+
+                            Supported formats: MP4, AVI, MOV, MKV, WebM
+
+                        </p>
+
+
+                        <label for="sessionName">
+                            Session Name
+                        </label>
+
+                        <input
+                            type="text"
+                            id="sessionName"
+                            name="sessionName"
+                            placeholder="Enter classroom session name"
+                            value="Classroom Session">
+
+
+                        <label for="videoFile">
+                            Select Video
+                        </label>
+
+                        <input
+                            type="file"
+                            id="videoFile"
+                            name="video"
+                            accept=".mp4,.avi,.mov,.mkv,.webm"
+                            required>
+
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary"
+                            id="submitBtn">
+
+                            Analyze Video
+
+                        </button>
+
+
+                        <div id="loader">
+                            Processing classroom video. Please wait...
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </section>
+
+
+        <!-- ===================================== -->
+        <!-- ANALYTICS -->
+        <!-- ===================================== -->
+
+        <section class="section" id="analytics">
+
+            <div class="section-heading">
+
+                <div>
+                    <h2>Session Analytics</h2>
+
+                    <p>
+                        Results from the most recent recorded-video analysis.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="grid-3">
+
+                <div class="card">
+
+                    <div class="metric-label">
+                        Engagement Score
+                    </div>
+
+                    <div class="metric-value" id="engScore">
+                        --
+                    </div>
+
+                    <div class="progress-track">
+                        <div
+                            class="progress-fill"
+                            id="scoreMeter">
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <div class="card">
+
+                    <div class="metric-label">
+                        Attendance Status
+                    </div>
+
+                    <div class="metric-value" id="attStatus">
+                        --
+                    </div>
+
+                    <div class="metric-description">
+                        Based on recorded-video analysis
+                    </div>
+
+                </div>
+
+
+                <div class="card">
+
+                    <div class="metric-label">
+                        Duration Present
+                    </div>
+
+                    <div class="metric-value" id="durPresent">
+                        --
+                    </div>
+
+                    <div class="metric-description">
+                        Recorded session estimate
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="card" style="margin-top:18px;">
+
+                <div class="section-heading">
+
+                    <div>
+                        <h2 style="font-size:15px;">
+                            Engagement Timeline
+                        </h2>
+
+                        <p>
+                            Recorded-video analysis timeline
+                        </p>
+                    </div>
+
+                </div>
+
+                <div class="chart-container">
+
+                    <canvas id="timelineChart"></canvas>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ===================================== -->
+        <!-- TEACHING INSIGHTS -->
+        <!-- ===================================== -->
+
+        <section class="section" id="insights">
+
+            <div class="section-heading">
+
+                <div>
+                    <h2>Instructor Teaching Insights</h2>
+
+                    <p>
+                        Suggestions based on the available analysis.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="card">
+
+                <ul
+                    class="suggestion-list"
+                    id="instSuggestions">
+
+                    <li>
+                        Analyze a classroom video to receive instructor suggestions.
+                    </li>
+
+                </ul>
+
+            </div>
+
+        </section>
+
+
+        <!-- ===================================== -->
+        <!-- STUDENT SUMMARY -->
+        <!-- ===================================== -->
+
+        <section class="section" id="student-summary">
+
+            <div class="section-heading">
+
+                <div>
+                    <h2>Student Analytics</h2>
+
+                    <p>
+                        Individual analytical summary.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="card">
+
+                <h3 style="font-size:14px;margin-bottom:12px;">
+                    Focus Consistency
+                </h3>
+
+                <div
+                    id="stuConsistency"
+                    class="metric-value">
+
+                    --
+
+                </div>
+
+                <h3 style="font-size:14px;margin-top:22px;margin-bottom:10px;">
+                    Summary
+                </h3>
+
+                <div
+                    id="stuSummary"
+                    class="student-summary">
+
+                    Analyze a classroom video to view student analytics.
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ===================================== -->
+        <!-- LIVE SESSION REPORT -->
+        <!-- ===================================== -->
+
+        <section
+            class="section"
+            id="liveReport"
+            hidden>
+
+            <div class="section-heading">
+
+                <div>
+                    <h2>Live Session Report</h2>
+
+                    <p>
+                        Summary of your completed webcam tracking session.
+                    </p>
+                </div>
+
+                <span class="system-status">
+                    REPORT GENERATED
+                </span>
+
+            </div>
+
+
+            <div class="card">
+
+                <h3
+                    id="reportSessionName"
+                    style="font-size:17px;">
+
+                    Live Classroom
+
+                </h3>
+
+
+                <div class="report-stats">
+
+                    <div class="report-stat">
+
+                        <span>Session Duration</span>
+
+                        <strong id="reportDuration">
+                            --
+                        </strong>
+
+                    </div>
+
+
+                    <div class="report-stat">
+
+                        <span>Peak Faces Detected</span>
+
+                        <strong id="reportPeak">
+                            --
+                        </strong>
+
+                    </div>
+
+
+                    <div class="report-stat">
+
+                        <span>Unique Temporary IDs</span>
+
+                        <strong id="reportParticipants">
+                            --
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <h3 class="report-heading">
+                    Participant Detection Estimates
+                </h3>
+
+                <div
+                    class="report-list"
+                    id="reportParticipantList">
+
+                    No report generated yet.
+
+                </div>
+
+
+                <h3 class="report-heading">
+                    Detection Timeline
+                </h3>
+
+                <div
+                    class="report-list"
+                    id="reportTimeline">
+
+                    No timeline available.
+
+                </div>
+
+
+                <p
+                    class="report-note"
+                    id="reportNote">
+
+                </p>
+
+
+                <button
+                    class="btn btn-primary"
+                    id="downloadLiveReport"
+                    type="button">
+
+                    Download Live Report (CSV)
+
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- ===================================== -->
+        <!-- EXPORT -->
+        <!-- ===================================== -->
+
+        <section class="section">
+
+            <div class="section-heading">
+
+                <div>
+                    <h2>Recorded Analysis Export</h2>
+
+                    <p>
+                        Download the latest recorded-video analysis.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="card">
+
+                <div class="camera-controls">
+
+                    <button
+                        class="btn btn-secondary"
+                        id="csvBtn"
+                        type="button">
+
+                        Export CSV
+
+                    </button>
+
+
+                    <button
+                        class="btn btn-secondary"
+                        id="jsonBtn"
+                        type="button">
+
+                        Export JSON
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- FOOTER -->
+
+        <footer class="footer">
+
+            <p>
+                Multimodal Attendance & Engagement Agent
+            </p>
+
+            <p>
+                Prototype notice: Camera-based face detection and tracking
+                provide estimates only. Temporary participant IDs do not
+                establish verified identities or attendance. Engagement
+                scores should not be interpreted as definitive measures
+                of attention or learning.
+            </p>
+
+        </footer>
+
+    </main>
+
+</div>
+
+
+<!-- FRONTEND JAVASCRIPT -->
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>

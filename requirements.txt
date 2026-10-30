@@ -1,0 +1,5 @@
+Flask==3.1.1
+numpy==1.26.4
+opencv-python==4.10.0.84
+moviepy==1.0.3
+imageio-ffmpeg>=0.5.1
